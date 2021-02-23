@@ -4,8 +4,8 @@ Richard's Auxiliary Sci-Kit Learn Stuff. Various homemade estimators that I use 
 ### Contents:
   - Tranformers
     - ColumnAutoTransformer
-      - Hands-off preprocessor. Interprets features and tranforms according to their type (numerical, categorical, etx.), with sensible deafults and easy tweaking.
+      - _Hands-off preprocessor. Interprets features and tranforms according to their type (numerical, categorical, etx.), with sensible deafults and easy tweaking._
     - DictEncoder (Comming Soon)
   - Optimizers
     - RandomSeedSearchCV
-      - Variation on RandomSearchCV. Enables easier searching across large or abnormal parameter spaces by calling a user-provided model-generating function to produce randomized models with only a random seed as input.
+      - _Variation on RandomSearchCV. Enables easier searching across large or abnormal parameter spaces by calling a user-provided model-generating function to produce randomized models with only a random seed as input._
