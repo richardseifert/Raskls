@@ -131,3 +131,4 @@ dmypy.json
 # Other!
 *.ipynb
 raskls/Data
+ignore

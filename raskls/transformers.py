@@ -81,8 +81,8 @@ class ColumnAutoTransformer(BaseEstimator):
             return wrapper
 
     def set_params(self,*args,**kwargs):
-        # Initialize by calling set_params!
-        # See set_params for parameter info.
+        # Do this by re-calling __init__ (hopefully kosher).
+        # See __init__ for parameter info.
         self.__init__(*args,**kwargs)
 
     def _feature_kind(self,feat):
@@ -123,12 +123,18 @@ class ColumnAutoTransformer(BaseEstimator):
             raise ValueError("Unknown keyword: %s"%(keyword))
         return keyword
 
-    def _get_override(self,feat,tranformer_type):
+    def _get_override(self,feat,overrideable):
         '''
-        Get override info for a specific feature type and
+        Get override info for a specific feature and overridable thing.
+        Returns overridden status and override value (None if not overridden).
+
+        ARGUMENTS:
+          feat - String feature name.
+          overrideable - String identifier of the thing to check override status.
+                        Supported: 'kind','imputer','scaler','encoder'
         '''
         try:
-            return True,self.override[feat][tranformer_type]
+            return True,self.override[feat][overridable]
         except (TypeError,KeyError) as e:
             return False,None
 
@@ -260,7 +266,7 @@ class ColumnAutoTransformer(BaseEstimator):
         return xt
     def _format_output(self,Xt):
         '''
-        TODO: based on self._output_format, cast Xt to numpy or leave alone.
+        TODO: based on self.output_format_, cast Xt to numpy or leave alone.
         For now, just return as Pandas.
         '''
         if isinstance(Xt,pd.DataFrame) and self.output_format_ == 'pandas':
@@ -278,7 +284,7 @@ class ColumnAutoTransformer(BaseEstimator):
             return Xt
     def fit(self,X,y=None,output_format=None):
         '''
-        Generate sub-estimators, fit each with training data, and determine output format.
+        Generate/retrieve sub-estimators, fit each with training data, and determine output format.
 
         ARGUMENTS:
           X - 2D array-like. Training data
@@ -319,6 +325,7 @@ class ColumnAutoTransformer(BaseEstimator):
     def transform(self,X):
         '''
         Transform each feature using its corresponding sub-estimators.
+        Return transformed data, Xt.
 
         ARGUMENTS:
           X - 2D array-like. Data to transform!
