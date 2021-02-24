@@ -1,5 +1,5 @@
 # Raskls
-Richard's Auxiliary Sci-Kit Learn Stuff. Various homemade estimators that I use often enough that I wanted to wrap them all up.
+Richard's Auxiliary Sci-Kit Learn Stuff. Various homemade estimators I use often enough that I wanted to wrap them all up.
 
 ### Contents:
   - Tranformers
