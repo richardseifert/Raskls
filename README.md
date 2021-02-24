@@ -9,4 +9,4 @@ Richard's Auxiliary Sci-Kit Learn Stuff. Various homemade estimators I use often
       - _Like builtin [sklearn.preprocessing.FunctionTransformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.FunctionTransformer.html), but for discrete dictionary mappings._
   - Optimizers
     - RandomSeedSearchCV
-      - _Variation on RandomSearchCV. Enables easier searching across large or abnormal parameter spaces by calling a user-provided model-generating function to produce randomized models with only a random seed as input._
+      - _Variation on [sklearn.model_selection.RandomizedSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html). Enables easier searching across large or abnormal parameter spaces by calling a user-provided model-generating function to produce randomized models with only a random seed as input._
