@@ -40,7 +40,7 @@ class ColumnAutoTransformer(BaseEstimator):
                    imputer="Simple",impute_passthroughs=False,
                    impute_numerical="median",impute_categorical="most_frequent",
                    impute_boolean="most_frequent",impute_textual="most_frequent",
-                   scaler="Standard",
+                   scaler="Standard", scale_encoded_text=False,
                    cat_encoder="OneHot",bool_encoder="Ordinal",
                    txt_encoder="Tfidf",txt_n_features=20,
                    drop=None,passthrough=None,verbose=False):
@@ -50,14 +50,15 @@ class ColumnAutoTransformer(BaseEstimator):
 
         #Set imputing parameters
         self.imputer = imputer
-        self.impute_strategy = {'numerical':impute_numerical,
-                                'categorical':impute_categorical,
-                                'boolean':impute_boolean,
-                                'textual':impute_textual}
+        self.impute_numerical = impute_numerical
+        self.impute_categorical = impute_categorical
+        self.impute_boolean = impute_boolean
+        self.impute_textual = impute_textual
         self.impute_passthroughs=impute_passthroughs
 
         #Set scaling parameters
         self.scaler = scaler
+        self.scale_encoded_text = scale_encoded_text
 
         #Set encoding parameters
         self.cat_encoder= cat_encoder
@@ -74,20 +75,20 @@ class ColumnAutoTransformer(BaseEstimator):
 
     class _Decorators:
         def get_transformer(func):
-            def wrapper(self,feat,kind=None):
+            def wrapper(self, feat, kind=None):
                 if kind is None:
                     kind = self._feature_kind(feat)
-                tfm = func(self,feat,kind)
+                tfm = func(self, feat, kind)
                 return self._instantiate_from_keyword(tfm)
             return wrapper
 
-    def set_params(self,*args,**kwargs):
+    def set_params(self, *args, **kwargs):
         # Do this by re-calling __init__ (hopefully kosher).
         # See __init__ for parameter info.
         self.__init__(*args,**kwargs)
 
-    def _feature_kind(self,feat):
-        is_overridden,override_value = self._get_override(feat.name,'kind')
+    def _feature_kind(self, feat):
+        is_overridden,override_value = self._get_override(feat.name, 'kind')
         if is_overridden:
             return override_value
 
@@ -106,7 +107,7 @@ class ColumnAutoTransformer(BaseEstimator):
             kind = 'categorical'
         return kind
 
-    def _instantiate_from_keyword(self,keyword,**kwargs):
+    def _instantiate_from_keyword(self, keyword, **kwargs):
         '''
         Helper for grabbing sub-estimator instances.
         Tranforms keyword into estimator by the following cases:
@@ -124,7 +125,7 @@ class ColumnAutoTransformer(BaseEstimator):
             raise ValueError("Unknown keyword: %s"%(keyword))
         return keyword
 
-    def _get_override(self,feat,overrideable):
+    def _get_override(self, feat, overrideable):
         '''
         Get override info for a specific feature and overridable thing.
         Returns overridden status and override value (None if not overridden).
@@ -138,20 +139,31 @@ class ColumnAutoTransformer(BaseEstimator):
         except (TypeError,KeyError) as e:
             return False,None
 
+    def impute_strategy(self, kind):
+        if kind == 'numerical':
+            return self.impute_numerical
+        if kind == 'categorical':
+            return self.impute_categorical
+        if kind == 'boolean':
+            return self.impute_boolean
+        if kind == 'textual':
+            return self.impute_textual
+        raise ValueError("Unrecognized impute kind, %s"%(kind))
+
     @_Decorators.get_transformer
-    def _get_imputer(self,feat,kind=None):
+    def _get_imputer(self, feat, kind=None):
         is_overridden,override_value = self._get_override(feat.name,'imputer')
         if not is_overridden:
             if self.imputer == 'Simple':
                 return self._instantiate_from_keyword(self.imputer,
-                               strategy=self.impute_strategy[kind])
+                               strategy=self.impute_strategy(kind))
             else:
                 return self._instantiate_from_keyword(self.imputer)
         else:
             return override_value
     @_Decorators.get_transformer
-    def _get_scaler(self,feat,kind=None):
-        is_overridden,override_value = self._get_override(feat.name,'scaler')
+    def _get_scaler(self, feat, kind=None):
+        is_overridden, override_value = self._get_override(feat.name,'scaler')
         if not is_overridden:
             if kind == 'numerical' or (kind == 'textual' and self.scale_encoded_text):
                 return self.scaler
@@ -160,7 +172,7 @@ class ColumnAutoTransformer(BaseEstimator):
             return override_value
 
     @_Decorators.get_transformer
-    def _get_encoder(self,feat,kind=None):
+    def _get_encoder(self, feat, kind=None):
         is_overridden,override_value = self._get_override(feat.name,'encoder')
         if not is_overridden:
             if kind == 'categorical':
@@ -174,7 +186,7 @@ class ColumnAutoTransformer(BaseEstimator):
         else:
             return override_value
 
-    def _make_info(self,X,store=True):
+    def _make_info(self, X, store=True):
         '''
         Helper method to gather information about each feature in dataset X.
         Info table also houses sub-estimator instances used in fit, transform.
@@ -205,7 +217,8 @@ class ColumnAutoTransformer(BaseEstimator):
         if store:
             self.column_info_ = df
         return df
-    def info(self,X=None):
+
+    def info(self, X=None):
         '''
         User-facing info gathering method. Returns feature information
         known by the fitted model.
@@ -227,9 +240,9 @@ class ColumnAutoTransformer(BaseEstimator):
             check_is_fitted(self)
             return self.column_info_
         else:
-            return self._make_info(X,store=False)
+            return self._make_info(X, store=False)
 
-    def _validate_X(self,X):
+    def _validate_X(self, X):
         '''
         Check that X has proper shape. Cast to pandas if not already.
         '''
@@ -237,13 +250,15 @@ class ColumnAutoTransformer(BaseEstimator):
         if not isinstance(X,pd.DataFrame):
             return pd.DataFrame(X)
         return X
-    def _validate_output_format(self,output_format):
+
+    def _validate_output_format(self, output_format):
         #Check that user-requested output format is supported.
         if output_format in ['pandas','numpy']:
             return output_format
         else:
             raise ValueError("Invalid output_format '%s'. Must be on of: 'pandas', 'numpy'"%(output_format))
-    def _cast_label_transformed(self,xt,label,sub_labels=None):
+
+    def _cast_label_transformed(self, xt, label, sub_labels=None):
         '''
         Cast a transformed feature to pandas DataFrame, and label column(s).
         TODO: Use sub_labels instead of numbers for, e.g., OneHotEncoded columns.
@@ -255,11 +270,16 @@ class ColumnAutoTransformer(BaseEstimator):
         except AttributeError:
             xt = pd.DataFrame(xt)
 
-        number_cols = xt.shape[1]>1
-        for i,col in enumerate(xt.columns):
-            xt=xt.rename(columns={col:label + ("-"+str(i) if number_cols else "")})
+        if sub_labels is None:
+            sub_labels = [str(i) for i in range(len(xt.columns))]
+
+        label_cols = xt.shape[1]>1
+        for sl, col in zip(sub_labels, xt.columns):
+            new = "%s%s"%(label, "-"+sl if label_cols else "")
+            xt = xt.rename(columns={col: new})
         return xt
-    def _format_output(self,Xt):
+
+    def _format_output(self, Xt):
         '''
         TODO: based on self.output_format_, cast Xt to numpy or leave alone.
         For now, just return as Pandas.
@@ -277,7 +297,8 @@ class ColumnAutoTransformer(BaseEstimator):
             except AssertionError:
                 raise TypeError("Unrecognized datatype for Xt. Should be pandas.DataFrame or numpy.ndarray.")
             return Xt
-    def fit(self,X,y=None,output_format=None):
+
+    def fit(self, X, y=None, output_format=None):
         '''
         Generate/retrieve sub-estimators, fit each with training data, and determine output format.
         ARGUMENTS:
@@ -320,6 +341,7 @@ class ColumnAutoTransformer(BaseEstimator):
         if not output_format is None:
             self.output_format_ = self._validate_output_format(output_format)
         return self
+
     def transform(self,X):
         '''
         Transform each feature using its corresponding sub-estimators.
@@ -350,7 +372,12 @@ class ColumnAutoTransformer(BaseEstimator):
                 #Text encoders need 1D input (for some reason... :( )
                 if not feature_info['encoder'] is None:
                     xt=feature_info['encoder'].transform(xt.flatten())
-            xts.append(self._cast_label_transformed(xt,str(feat)))
+
+            feat_names = None
+            if isinstance(feature_info['encoder'], OneHotEncoder):
+                feat_names = feature_info['encoder'].categories_[0]
+
+            xts.append(self._cast_label_transformed(xt,str(feat), feat_names))
         Xt = pd.concat(xts,axis=1)
         return self._format_output(Xt)
 
