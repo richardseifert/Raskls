@@ -12,7 +12,6 @@ class ColumnAutoTransformer(BaseEstimator):
     columnar data and transforming numerical, categorical,
     boolean, and textual data features with separate, refineable,
     preprocessing subroutines.
-
     Responsible for:
       - Categorizing each feature as one of the following kinds:
           - Numerical (int or float, many unique values)
@@ -51,8 +50,10 @@ class ColumnAutoTransformer(BaseEstimator):
 
         #Set imputing parameters
         self.imputer = imputer
-        self.impute_strategy = {'numerical':impute_numerical,'categorical':impute_categorical,
-                                'boolean':impute_boolean,'textual':impute_textual}
+        self.impute_strategy = {'numerical':impute_numerical,
+                                'categorical':impute_categorical,
+                                'boolean':impute_boolean,
+                                'textual':impute_textual}
         self.impute_passthroughs=impute_passthroughs
 
         #Set scaling parameters
@@ -127,7 +128,6 @@ class ColumnAutoTransformer(BaseEstimator):
         '''
         Get override info for a specific feature and overridable thing.
         Returns overridden status and override value (None if not overridden).
-
         ARGUMENTS:
           feat - String feature name.
           overrideable - String identifier of the thing to check override status.
@@ -178,7 +178,6 @@ class ColumnAutoTransformer(BaseEstimator):
         '''
         Helper method to gather information about each feature in dataset X.
         Info table also houses sub-estimator instances used in fit, transform.
-
         ARGUMENTS:
           X     - 2D array-like. Dataset to construct info table about.
           store - Flag to store output in model variable column_info_, which
@@ -210,9 +209,7 @@ class ColumnAutoTransformer(BaseEstimator):
         '''
         User-facing info gathering method. Returns feature information
         known by the fitted model.
-
         Can also be hijacked to generate info for a user-provided dataset, X.
-
         Info table includes the following:
           ID      : Feature name or column index.
           dtype   : Data type of feature.
@@ -221,8 +218,6 @@ class ColumnAutoTransformer(BaseEstimator):
           imputer : Imputer instance for this feature, or None.
           scaler  : Scaler instance for this feature, or None.
           encoder : Encoder instance for this feature, or None.
-
-
         ARGUMENTS:
           X - [Optional] 2D array-like. Data to gather info on.
               If nothing provided, table will reflect info on
@@ -285,7 +280,6 @@ class ColumnAutoTransformer(BaseEstimator):
     def fit(self,X,y=None,output_format=None):
         '''
         Generate/retrieve sub-estimators, fit each with training data, and determine output format.
-
         ARGUMENTS:
           X - 2D array-like. Training data
           y - [Optional] Target variable. Not used here, but accepted for potential
@@ -306,12 +300,16 @@ class ColumnAutoTransformer(BaseEstimator):
             feat = feature_info['ID']
             #Transform feature!
             xt = pd.DataFrame(X[feat]).copy()
-            if not feature_info['imputer'] is None: xt=feature_info['imputer'].fit_transform(xt)
-            if not feature_info['scaler'] is None: xt=feature_info['scaler'].fit_transform(xt)
+            if not feature_info['imputer'] is None:
+                xt=feature_info['imputer'].fit_transform(xt)
+            if not feature_info['scaler'] is None:
+                xt=feature_info['scaler'].fit_transform(xt)
             try:
-                if not feature_info['encoder'] is None: xt=feature_info['encoder'].fit_transform(xt)
+                if not feature_info['encoder'] is None:
+                    xt=feature_info['encoder'].fit_transform(xt)
             except AttributeError:
-                if not feature_info['encoder'] is None: xt=feature_info['encoder'].fit_transform(xt.flatten())
+                if not feature_info['encoder'] is None:
+                    xt=feature_info['encoder'].fit_transform(xt.flatten())
 
         # Determine output format.
         if isinstance(X,pd.DataFrame):
@@ -326,7 +324,6 @@ class ColumnAutoTransformer(BaseEstimator):
         '''
         Transform each feature using its corresponding sub-estimators.
         Return transformed data, Xt.
-
         ARGUMENTS:
           X - 2D array-like. Data to transform!
         '''
@@ -342,13 +339,17 @@ class ColumnAutoTransformer(BaseEstimator):
             feat = feature_info['ID']
             #Transform feature!
             xt = pd.DataFrame(X[feat]).copy()
-            if not feature_info['imputer'] is None: xt=feature_info['imputer'].transform(xt)
-            if not feature_info['scaler'] is None: xt=feature_info['scaler'].transform(xt)
+            if not feature_info['imputer'] is None:
+                xt=feature_info['imputer'].transform(xt)
+            if not feature_info['scaler'] is None:
+                xt=feature_info['scaler'].transform(xt)
             try:
-                if not feature_info['encoder'] is None: xt=feature_info['encoder'].transform(xt)
+                if not feature_info['encoder'] is None:
+                    xt=feature_info['encoder'].transform(xt)
             except AttributeError:
                 #Text encoders need 1D input (for some reason... :( )
-                if not feature_info['encoder'] is None: xt=feature_info['encoder'].transform(xt.flatten())
+                if not feature_info['encoder'] is None:
+                    xt=feature_info['encoder'].transform(xt.flatten())
             xts.append(self._cast_label_transformed(xt,str(feat)))
         Xt = pd.concat(xts,axis=1)
         return self._format_output(Xt)
